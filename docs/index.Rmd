@@ -1,0 +1,1985 @@
+---
+title: "SAU"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+
+# This is an alternative to libraries' load (instead of using library(package))
+pacman::p_load(
+  dplyr,          # funciones de manejo de dataset
+  googlesheets4,  # Acceso a datos de Googlesheet
+  RPostgreSQL,    # Acceso a BBDD Postgres
+  kableExtra,     # tablas mejoradas 
+  rio,            # data import/export     
+  here,           # locate files
+  tidyverse,      # data management and visualization
+  flexdashboard,  # dashboard versions of R Markdown reports
+  shiny,          # dynamic figures
+  plotly,         # interactive figures
+  dplyr,
+  MASS,           # relacionado con plotly en gráfico derecha
+  leaflet,        # Relacionado con mapas
+  DT              # Tablas 
+)
+
+#create connection object
+conn <- dbConnect(drv =PostgreSQL(), 
+                 user="pzl01", 
+                 password= "Catalonia22",
+                 host = "sigdipucordoba.eprinsa.es",
+                 port=5432, 
+                 dbname="geodipco")
+
+# Create a dataframe given a schema-table pair
+raw = dbReadTable(
+  conn, 
+  c(schema = "inversiones", table = "v_inversiones_seguimiento"))
+dbDisconnect(conn)
+
+# Selecting a subset of data
+raw <- raw %>% 
+  tibble() %>% 
+  filter(servicio_responsable == "Servicio de Arquitectura y Urbanismo") %>% 
+  filter(estado == "C" | estado == "S") %>% 
+  filter(redacta != "Ayuntamiento") %>% # Ojo a esto!!
+  mutate(orden = case_when(
+    fase =="PLANIFICACIÓN" ~1,
+    fase =="REDACCIÓN" ~2,
+    fase =="LICITACIÓN" ~3,
+    fase =="EJECUCIÓN" ~4,
+    fase =="GARANTÍA" ~5,
+    fase =="FIN ACTUACIÓN" ~6)) %>% 
+  arrange(orden)
+
+raw$fase <- factor(raw$fase, 
+                  levels = c("PLANIFICACIÓN", 
+                             "REDACCIÓN", 
+                             "LICITACIÓN",
+                             "EJECUCIÓN",
+                             "GARANTÍA",
+                             "FIN ACTUACION"))
+
+
+raw$equipo_redactor <- factor(raw$equipo_redactor,
+                             levels = c("SSCC SAU",
+                                        "U. Norte", 
+                                        "U. Pedroche",
+                                        "U. Guadiato",
+                                        "U. Bajo Guadalquivir",
+                                        "U. Medio Guadalquivir",
+                                        "U. Alto Guadalquivir",
+                                        "U. Campiña",
+                                        "U. Guadajoz",
+                                        "U. Suroeste",
+                                        "U. Sureste"))
+
+```
+
+
+# Resumen general
+
+## Row {data-height=100}
+###
+```{r}
+ut = "actuaciones"
+value <- raw %>% 
+  subset(select = actuacion) %>% 
+  nrow
+
+valueBox(
+  color = "navy",
+  #value,
+  value = tags$p( value, style = "font-size: 300%;"),
+  caption = ut,) 
+  #width = 4,
+  #icon="fa-random" 
+
+
+# Unidades territoriales
+uts = raw$equipo_redactor %>% 
+  unique  
+
+
+```
+###
+```{r}
+# SSCC SAU
+ut = uts[10]
+value <- raw %>% 
+  subset(select = actuacion) %>% 
+  filter(raw$equipo_redactor == ut) %>% 
+  nrow
+
+valueBox(value,caption = ut )
+```
+###
+```{r}
+# Norte
+ut = uts[9]
+value <- raw %>% 
+  subset(select = actuacion) %>% 
+  filter(raw$equipo_redactor == ut) %>% 
+  nrow
+
+valueBox(value,caption = ut )
+```
+###
+```{r}
+# Pedroche
+ut = uts[1]
+value <- raw %>% 
+  subset(select = actuacion) %>% 
+  filter(raw$equipo_redactor == ut) %>% 
+  nrow
+
+valueBox(value,caption = ut  )
+```
+###
+```{r}
+# Guadiato
+ut = uts[5]
+value <- raw %>% 
+  subset(select = actuacion) %>% 
+  filter(raw$equipo_redactor == ut) %>% 
+  nrow
+
+valueBox(value,caption = ut )
+```
+###
+```{r}
+# Bajo Guadalquivir
+ut = uts[11]
+value <- raw %>% 
+  subset(select = actuacion) %>% 
+  filter(raw$equipo_redactor == ut) %>% 
+  nrow
+
+valueBox(value,caption = ut )
+```
+###
+```{r}
+# Medio Guadalquivir
+ut = uts[6]
+value <- raw %>% 
+  subset(select = actuacion) %>% 
+  filter(raw$equipo_redactor == ut) %>% 
+  nrow
+
+valueBox(value,caption = ut )
+```
+###
+```{r}
+# Alto Guadalquivir
+ut = uts[8]
+value <- raw %>% 
+  subset(select = actuacion) %>% 
+  filter(raw$equipo_redactor == ut) %>% 
+  nrow
+
+valueBox(value,caption = ut )
+```
+###
+```{r}
+# Campiña
+ut = uts[7]
+value <- raw %>% 
+  subset(select = actuacion) %>% 
+  filter(raw$equipo_redactor == ut) %>% 
+  nrow
+
+valueBox(value,caption = ut )
+```
+###
+```{r}
+#Guadajoz
+ut = uts[4]
+value <- raw %>% 
+  subset(select = actuacion) %>% 
+  filter(raw$equipo_redactor == ut) %>% 
+  nrow
+
+valueBox(value,caption = ut )
+```
+###
+```{r}
+#Suroeste
+ut = uts[2]
+value <- raw %>% 
+  subset(select = actuacion) %>% 
+  filter(raw$equipo_redactor == ut) %>% 
+  nrow
+
+valueBox(value,caption = ut)
+```
+###
+```{r}
+#Sureste
+ut = uts[3]
+value <- raw %>% 
+  subset(select = actuacion) %>% 
+  filter(raw$equipo_redactor == ut) %>% 
+  nrow
+
+valueBox(value,caption = ut  )
+```
+
+###
+```{r}
+# Otras UTs (Sin ut asignada)
+value <- raw %>% 
+  subset(select = actuacion) %>% 
+  filter( is.na(raw$equipo_redactor) ) %>% 
+  nrow
+
+valueBox(value,color = "lightyellow",caption = "Otras" )
+
+```
+
+
+
+## Row {data-height=600}
+
+### Actuaciones por fase
+
+```{r}
+
+df<- raw %>% 
+  group_by(fase, orden) %>% 
+  filter(fase != "FIN ACTUACIÓN") %>% 
+  tally() 
+  #%>% arrange(orden)
+
+
+fig <- df %>% 
+  plot_ly(x = ~fase,
+          y = ~n, 
+          #color = ~programa_asistencia, 
+          type ="bar", 
+          colors = "Accent") %>% 
+  layout(
+     plot_bgcolor='#e5ecf6',
+     yaxis = list(title = 'Actuaciones'), 
+     #xaxis = list(categoryorder = "category ascending"),
+     barmode = 'stack')
+
+fig
+```
+
+
+### Actuaciones por fase y unidad
+```{r}
+df<- raw %>% 
+  group_by(fase, equipo_redactor) %>% 
+  filter(fase != "FIN ACTUACIÓN" & equipo_redactor!="") %>% 
+  tally()  
+  #arrange(orden)
+  #%>% pivot_wider(names_from = fondo, values_from = n)
+
+
+fig <- df %>% 
+  plot_ly(x = ~fase, y = ~n, color = ~equipo_redactor) %>%  
+  layout(plot_bgcolor='#e5ecf6',
+     yaxis = list(title = 'Actuaciones'))
+
+fig
+```
+
+
+## Row
+### Listado de Actuaciones
+```{r}
+dt <- raw %>% 
+  mutate(desvio = case_when(
+    fase =="EJECUCIÓN" ~dias_desvio_obra,
+    fase =="REDACCIÓN" ~dias_desvio_redaccion,
+    fase =="GARANTÍA" ~dias_desvio_garantia)) %>% 
+  subset(select = c(id_inversion, actuacion, fondo, fase, desvio, finan_total)) 
+  
+datatable(dt, options = list(pageLength = 5))
+```
+
+# SSCC SAU
+```{r}
+ut <- uts[10]
+```
+## Row
+### Fases {data-width=450}
+```{r}
+
+df <- raw %>% 
+  filter(equipo_redactor == ut)
+
+df$fase <- as.character(df$fase)
+
+df<- df %>% 
+  filter(fase == "REDACCIÓN" | fase == "EJECUCIÓN" | fase == "GARANTÍA") %>% 
+  group_by(fase, fondo) %>% 
+  tally() 
+
+df$fase <- factor(df$fase, 
+                  levels = c("REDACCIÓN", 
+                             "EJECUCIÓN",
+                             "GARANTÍA"))
+  
+fig <- df %>% 
+  plot_ly(x = ~fase, y = ~n, color = ~fondo, type='bar') %>% 
+  layout(plot_bgcolor='#e5ecf6',
+     yaxis = list(title = 'Actuaciones'))
+
+
+fig
+```
+
+### Actuaciones con atraso {data-width=150}
+
+#### 
+```{r}
+dt <- raw %>% 
+  subset(select = c(equipo_redactor,
+                    fase, 
+                    dias_desvio_redaccion, 
+                    dias_desvio_obra,
+                    dias_desvio_garantia)) %>% 
+  filter( equipo_redactor == ut) %>% 
+  filter(fase == "REDACCIÓN" | fase == "EJECUCIÓN" | fase == "GARANTÍA")  %>%
+  mutate(desvio = case_when(
+    fase == "REDACCIÓN" & dias_desvio_redaccion < 0  ~ 1,
+    fase == "EJECUCIÓN" & dias_desvio_obra < 0  ~ 1,
+    fase == "GARANTÍA" & dias_desvio_garantia < 0  ~ 1
+    ))
+
+n_reda <- dt %>%  filter(fase == "REDACCIÓN") %>% nrow
+n_ejec <- dt %>%  filter(fase == "EJECUCIÓN") %>% nrow
+n_gara <- dt %>%  filter(fase == "GARANTÍA") %>% nrow
+
+
+dt <- dt %>% 
+  subset( select =c(fase, desvio)) %>% 
+  group_by(fase) %>% 
+  filter(desvio ==1) %>% 
+  tally() 
+
+
+value<- dt %>% filter(fase =="REDACCIÓN")
+
+
+gauge(value$n, min = 0, max = n_reda,
+      label = "Redacción",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+#### 
+```{r}
+value<- dt %>% filter(fase =="EJECUCIÓN")
+
+
+gauge(value$n, min = 0, max = n_ejec,
+      label = "Ejecución",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+#### 
+```{r}
+value<- dt %>% filter(fase =="GARANTÍA")
+
+
+gauge(value$n, min = 0, max = n_gara,
+      label = "Garantía",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+
+### Mapa
+```{r}
+data <- data.frame(lat = c(38.29866,38.49449,38.38152),
+                   long = c(-5.26530,-5.14076,-4.85396))
+leaflet() %>%
+  addTiles() %>%
+  addMarkers(lng=-4.80702, lat=37.89171, 
+             popup="MN-PLAN Colegios Provinciales") %>% 
+  addMarkers(lng = data$long, lat = data$lat, 
+             popup = paste("Punto", data$lat, lat = data$long)) %>% 
+  setView(lng=-4.80702, lat=37.89171, 10)
+```
+
+## Row
+### Listado de actuaciones con Alarma ( $\leq$ 15 días ) {data-width=450}
+```{r}
+df <- raw %>% 
+  subset(select = c(actuacion,
+                    equipo_redactor,
+                    fase,
+                    servicio_responsable,
+                    dias_desvio_redaccion,
+                    dias_desvio_obra,
+                    dias_desvio_garantia)) %>% 
+  filter(equipo_redactor == ut) %>% 
+  mutate(desvio = case_when(
+    fase =="REDACCIÓN" & dias_desvio_redaccion <= 15  ~ dias_desvio_redaccion,
+    fase =="EJECUCIÓN" & dias_desvio_obra <= 15  ~ dias_desvio_obra,
+    fase =="GARANTÍA" &  dias_desvio_garantia <= 15  ~ dias_desvio_garantia)) %>% 
+  filter(!is.na(desvio))
+
+df <- df %>% 
+  subset(select = c(actuacion, fase, desvio)) %>% 
+  filter(desvio <=15)
+
+datatable(df, options = list(pageLength = 5))
+
+```
+
+### Listado de actuaciones
+```{r}
+#library(DT)
+df <- raw %>% 
+  subset(select = c(actuacion,
+                    municipio, 
+                    fase,
+                    servicio_responsable,
+                    equipo_redactor:devuelta_garantia)) %>% 
+  filter(equipo_redactor == ut) %>%
+  subset(select = -servicio_responsable)
+
+datatable(df, options = list(pageLength = 7))
+```
+
+
+
+# U. Norte
+```{r}
+ut <- uts[9]
+```
+## Row
+### Fases {data-width=450}
+```{r}
+
+
+df <- raw %>% 
+  filter(equipo_redactor == ut)
+
+df$fase <- as.character(df$fase)
+
+df<- df %>% 
+  filter(fase == "REDACCIÓN" | fase == "EJECUCIÓN" | fase == "GARANTÍA") %>% 
+  group_by(fase, fondo) %>% 
+  tally() 
+
+df$fase <- factor(df$fase, 
+                  levels = c("REDACCIÓN", 
+                             "EJECUCIÓN",
+                             "GARANTÍA"))
+  
+fig <- df %>% 
+  plot_ly(x = ~fase, y = ~n, color = ~fondo, type='bar') %>% 
+  layout(plot_bgcolor='#e5ecf6',
+     yaxis = list(title = 'Actuaciones'))
+
+
+fig
+```
+
+### Actuaciones con atraso {data-width=150}
+
+#### 
+```{r}
+dt <- raw %>% 
+  subset(select = c(equipo_redactor,
+                    fase, 
+                    dias_desvio_redaccion, 
+                    dias_desvio_obra,
+                    dias_desvio_garantia)) %>% 
+  filter( equipo_redactor == ut) %>% 
+  filter(fase == "REDACCIÓN" | fase == "EJECUCIÓN" | fase == "GARANTÍA")  %>% 
+  mutate(desvio = case_when(
+    fase == "REDACCIÓN" & dias_desvio_redaccion < 0  ~ 1,
+    fase == "EJECUCIÓN" & dias_desvio_obra < 0  ~ 1,
+    fase == "GARANTÍA" & dias_desvio_garantia < 0  ~ 1
+    ))
+
+n_reda <- dt %>%  filter(fase == "REDACCIÓN") %>% nrow
+n_ejec <- dt %>%  filter(fase == "EJECUCIÓN") %>% nrow
+n_gara <- dt %>%  filter(fase == "GARANTÍA") %>% nrow
+
+
+dt <- dt %>% 
+  subset( select =c(fase, desvio)) %>% 
+  group_by(fase) %>% 
+  filter(desvio ==1) %>% 
+  tally() 
+
+
+value<- dt %>% filter(fase =="REDACCIÓN")
+
+
+gauge(value$n, min = 0, max = n_reda,
+      label = "Redacción",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+#### 
+```{r}
+value<- dt %>% filter(fase =="EJECUCIÓN")
+
+
+gauge(value$n, min = 0, max = n_ejec,
+      label = "Ejecución",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+#### 
+```{r}
+value<- dt %>% filter(fase =="GARANTÍA")
+
+
+gauge(value$n, min = 0, max = n_gara,
+      label = "Garantía",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+
+### Mapa
+```{r}
+data <- data.frame(lat = c(38.29866,38.49449,38.38152),
+                   long = c(-5.26530,-5.14076,-4.85396))
+leaflet() %>%
+  addTiles() %>%
+  addMarkers(lng=-4.80702, lat=37.89171, 
+             popup="MN-PLAN Colegios Provinciales") %>% 
+  addMarkers(lng = data$long, lat = data$lat, 
+             popup = paste("Punto", data$lat, lat = data$long)) %>% 
+  setView(lng=-4.80702, lat=37.89171, 10)
+```
+
+## Row
+### Listado de actuaciones con Alarma {data-width=450}
+```{r}
+df <- raw %>% 
+  subset(select = c(actuacion,
+                    equipo_redactor,
+                    fase,
+                    servicio_responsable,
+                    dias_desvio_redaccion,
+                    dias_desvio_obra,
+                    dias_desvio_garantia)) %>% 
+  filter(equipo_redactor == ut) %>% 
+  mutate(desvio = case_when(
+    fase =="REDACCIÓN" & dias_desvio_redaccion <= 15  ~ dias_desvio_redaccion,
+    fase =="EJECUCIÓN" & dias_desvio_obra <= 15  ~ dias_desvio_obra,
+    fase =="GARANTÍA" &  dias_desvio_garantia <= 15  ~ dias_desvio_garantia)) %>% 
+  filter(!is.na(desvio))
+
+df <- df %>% 
+  subset(select = c(actuacion, fase, desvio)) %>% 
+  filter(desvio <=15)
+
+datatable(df, options = list(pageLength = 5))
+
+```
+
+### Listado de actuaciones
+```{r}
+#library(DT)
+df <- raw %>% 
+  subset(select = c(actuacion,
+                    municipio, 
+                    fase,
+                    servicio_responsable,
+                    equipo_redactor:devuelta_garantia)) %>% 
+  filter(equipo_redactor == ut) %>%
+  subset(select = -servicio_responsable)
+
+datatable(df, options = list(pageLength = 7))
+```
+
+
+
+# U. Pedroche
+```{r}
+ut <- uts[1]
+```
+## Row
+### Fases {data-width=450}
+```{r}
+
+
+df <- raw %>% 
+  filter(equipo_redactor == ut)
+
+df$fase <- as.character(df$fase)
+
+df<- df %>% 
+  filter(fase == "REDACCIÓN" | fase == "EJECUCIÓN" | fase == "GARANTÍA") %>% 
+  group_by(fase, fondo) %>% 
+  tally() 
+
+df$fase <- factor(df$fase, 
+                  levels = c("REDACCIÓN", 
+                             "EJECUCIÓN",
+                             "GARANTÍA"))
+  
+fig <- df %>% 
+  plot_ly(x = ~fase, y = ~n, color = ~fondo, type='bar') %>% 
+  layout(plot_bgcolor='#e5ecf6',
+     yaxis = list(title = 'Actuaciones'))
+
+
+fig
+```
+
+### Actuaciones con atraso {data-width=150}
+
+#### 
+```{r}
+dt <- raw %>% 
+  subset(select = c(equipo_redactor,
+                    fase, 
+                    dias_desvio_redaccion, 
+                    dias_desvio_obra,
+                    dias_desvio_garantia)) %>% 
+  filter( equipo_redactor == ut) %>% 
+  filter(fase == "REDACCIÓN" | fase == "EJECUCIÓN" | fase == "GARANTÍA")  %>% 
+  mutate(desvio = case_when(
+    fase == "REDACCIÓN" & dias_desvio_redaccion < 0  ~ 1,
+    fase == "EJECUCIÓN" & dias_desvio_obra < 0  ~ 1,
+    fase == "GARANTÍA" & dias_desvio_garantia < 0  ~ 1
+    ))
+
+n_reda <- dt %>%  filter(fase == "REDACCIÓN") %>% nrow
+n_ejec <- dt %>%  filter(fase == "EJECUCIÓN") %>% nrow
+n_gara <- dt %>%  filter(fase == "GARANTÍA") %>% nrow
+
+
+dt <- dt %>% 
+  subset( select =c(fase, desvio)) %>% 
+  group_by(fase) %>% 
+  filter(desvio ==1) %>% 
+  tally() 
+
+
+value<- dt %>% filter(fase =="REDACCIÓN")
+
+
+gauge(value$n, min = 0, max = n_reda,
+      label = "Redacción",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+#### 
+```{r}
+value<- dt %>% filter(fase =="EJECUCIÓN")
+
+
+gauge(value$n, min = 0, max = n_ejec,
+      label = "Ejecución",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+#### 
+```{r}
+value<- dt %>% filter(fase =="GARANTÍA")
+
+
+gauge(value$n, min = 0, max = n_gara,
+      label = "Garantía",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+
+### Mapa
+```{r}
+data <- data.frame(lat = c(38.29866,38.49449,38.38152),
+                   long = c(-5.26530,-5.14076,-4.85396))
+leaflet() %>%
+  addTiles() %>%
+  addMarkers(lng=-4.80702, lat=37.89171, 
+             popup="MN-PLAN Colegios Provinciales") %>% 
+  addMarkers(lng = data$long, lat = data$lat, 
+             popup = paste("Punto", data$lat, lat = data$long)) %>% 
+  setView(lng=-4.80702, lat=37.89171, 10)
+```
+
+## Row
+### Listado de actuaciones con Alarma {data-width=450}
+```{r}
+df <- raw %>% 
+  subset(select = c(actuacion,
+                    equipo_redactor,
+                    fase,
+                    servicio_responsable,
+                    dias_desvio_redaccion,
+                    dias_desvio_obra,
+                    dias_desvio_garantia)) %>% 
+  filter(equipo_redactor == ut) %>% 
+  mutate(desvio = case_when(
+    fase =="REDACCIÓN" & dias_desvio_redaccion <= 15  ~ dias_desvio_redaccion,
+    fase =="EJECUCIÓN" & dias_desvio_obra <= 15  ~ dias_desvio_obra,
+    fase =="GARANTÍA" &  dias_desvio_garantia <= 15  ~ dias_desvio_garantia)) %>% 
+  filter(!is.na(desvio))
+
+df <- df %>% 
+  subset(select = c(actuacion, fase, desvio)) %>% 
+  filter(desvio <=15)
+
+datatable(df, options = list(pageLength = 5))
+
+```
+
+### Listado de actuaciones
+```{r}
+#library(DT)
+df <- raw %>% 
+  subset(select = c(actuacion,
+                    municipio, 
+                    fase,
+                    servicio_responsable,
+                    equipo_redactor:devuelta_garantia)) %>% 
+  filter(equipo_redactor == ut) %>%
+  subset(select = -servicio_responsable)
+
+datatable(df, options = list(pageLength = 7))
+```
+
+
+
+
+# U. Guadiato
+```{r}
+ut <- uts[5]
+```
+## Row
+### Fases {data-width=450}
+```{r}
+
+
+df <- raw %>% 
+  filter(equipo_redactor == ut)
+
+df$fase <- as.character(df$fase)
+
+df<- df %>% 
+  filter(fase == "REDACCIÓN" | fase == "EJECUCIÓN" | fase == "GARANTÍA") %>% 
+  group_by(fase, fondo) %>% 
+  tally() 
+
+df$fase <- factor(df$fase, 
+                  levels = c("REDACCIÓN", 
+                             "EJECUCIÓN",
+                             "GARANTÍA"))
+  
+fig <- df %>% 
+  plot_ly(x = ~fase, y = ~n, color = ~fondo, type='bar') %>% 
+  layout(plot_bgcolor='#e5ecf6',
+     yaxis = list(title = 'Actuaciones'))
+
+
+fig
+```
+
+### Actuaciones con atraso {data-width=150}
+
+#### 
+```{r}
+dt <- raw %>% 
+  subset(select = c(equipo_redactor,
+                    fase, 
+                    dias_desvio_redaccion, 
+                    dias_desvio_obra,
+                    dias_desvio_garantia)) %>% 
+  filter( equipo_redactor == ut) %>% 
+  filter(fase == "REDACCIÓN" | fase == "EJECUCIÓN" | fase == "GARANTÍA")  %>% 
+  mutate(desvio = case_when(
+    fase == "REDACCIÓN" & dias_desvio_redaccion < 0  ~ 1,
+    fase == "EJECUCIÓN" & dias_desvio_obra < 0  ~ 1,
+    fase == "GARANTÍA" & dias_desvio_garantia < 0  ~ 1
+    ))
+
+n_reda <- dt %>%  filter(fase == "REDACCIÓN") %>% nrow
+n_ejec <- dt %>%  filter(fase == "EJECUCIÓN") %>% nrow
+n_gara <- dt %>%  filter(fase == "GARANTÍA") %>% nrow
+
+
+dt <- dt %>% 
+  subset( select =c(fase, desvio)) %>% 
+  group_by(fase) %>% 
+  filter(desvio ==1) %>% 
+  tally() 
+
+
+value<- dt %>% filter(fase =="REDACCIÓN")
+
+
+gauge(value$n, min = 0, max = n_reda,
+      label = "Redacción",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+#### 
+```{r}
+value<- dt %>% filter(fase =="EJECUCIÓN")
+
+
+gauge(value$n, min = 0, max = n_ejec,
+      label = "Ejecución",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+#### 
+```{r}
+value<- dt %>% filter(fase =="GARANTÍA")
+
+
+gauge(value$n, min = 0, max = n_gara,
+      label = "Garantía",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+
+### Mapa
+```{r}
+data <- data.frame(lat = c(38.29866,38.49449,38.38152),
+                   long = c(-5.26530,-5.14076,-4.85396))
+leaflet() %>%
+  addTiles() %>%
+  addMarkers(lng=-4.80702, lat=37.89171, 
+             popup="MN-PLAN Colegios Provinciales") %>% 
+  addMarkers(lng = data$long, lat = data$lat, 
+             popup = paste("Punto", data$lat, lat = data$long)) %>% 
+  setView(lng=-4.80702, lat=37.89171, 10)
+```
+
+## Row
+### Listado de actuaciones con Alarma {data-width=450}
+```{r}
+df <- raw %>% 
+  subset(select = c(actuacion,
+                    equipo_redactor,
+                    fase,
+                    servicio_responsable,
+                    dias_desvio_redaccion,
+                    dias_desvio_obra,
+                    dias_desvio_garantia)) %>% 
+  filter(equipo_redactor == ut) %>% 
+  mutate(desvio = case_when(
+    fase =="REDACCIÓN" & dias_desvio_redaccion <= 15  ~ dias_desvio_redaccion,
+    fase =="EJECUCIÓN" & dias_desvio_obra <= 15  ~ dias_desvio_obra,
+    fase =="GARANTÍA" &  dias_desvio_garantia <= 15  ~ dias_desvio_garantia)) %>% 
+  filter(!is.na(desvio))
+
+df <- df %>% 
+  subset(select = c(actuacion, fase, desvio)) %>% 
+  filter(desvio <=15)
+
+datatable(df, options = list(pageLength = 5))
+
+```
+
+### Listado de actuaciones
+```{r}
+#library(DT)
+df <- raw %>% 
+  subset(select = c(actuacion,
+                    municipio, 
+                    fase,
+                    servicio_responsable,
+                    equipo_redactor:devuelta_garantia)) %>% 
+  filter(equipo_redactor == ut) %>%
+  subset(select = -servicio_responsable)
+
+datatable(df, options = list(pageLength = 7))
+```
+
+
+# U. Bajo Guadalquivir
+```{r}
+ut <- uts[11]
+```
+## Row
+### Fases {data-width=450}
+```{r}
+
+
+df <- raw %>% 
+  filter(equipo_redactor == ut)
+
+df$fase <- as.character(df$fase)
+
+df<- df %>% 
+  filter(fase == "REDACCIÓN" | fase == "EJECUCIÓN" | fase == "GARANTÍA") %>% 
+  group_by(fase, fondo) %>% 
+  tally() 
+
+df$fase <- factor(df$fase, 
+                  levels = c("REDACCIÓN", 
+                             "EJECUCIÓN",
+                             "GARANTÍA"))
+  
+fig <- df %>% 
+  plot_ly(x = ~fase, y = ~n, color = ~fondo, type='bar') %>% 
+  layout(plot_bgcolor='#e5ecf6',
+     yaxis = list(title = 'Actuaciones'))
+
+
+fig
+```
+
+### Actuaciones con atraso {data-width=150}
+
+#### 
+```{r}
+dt <- raw %>% 
+  subset(select = c(equipo_redactor,
+                    fase, 
+                    dias_desvio_redaccion, 
+                    dias_desvio_obra,
+                    dias_desvio_garantia)) %>% 
+  filter( equipo_redactor == ut) %>% 
+  filter(fase == "REDACCIÓN" | fase == "EJECUCIÓN" | fase == "GARANTÍA")  %>% 
+  mutate(desvio = case_when(
+    fase == "REDACCIÓN" & dias_desvio_redaccion < 0  ~ 1,
+    fase == "EJECUCIÓN" & dias_desvio_obra < 0  ~ 1,
+    fase == "GARANTÍA" & dias_desvio_garantia < 0  ~ 1
+    ))
+
+n_reda <- dt %>%  filter(fase == "REDACCIÓN") %>% nrow
+n_ejec <- dt %>%  filter(fase == "EJECUCIÓN") %>% nrow
+n_gara <- dt %>%  filter(fase == "GARANTÍA") %>% nrow
+
+
+dt <- dt %>% 
+  subset( select =c(fase, desvio)) %>% 
+  group_by(fase) %>% 
+  filter(desvio ==1) %>% 
+  tally() 
+
+
+value<- dt %>% filter(fase =="REDACCIÓN")
+
+
+gauge(value$n, min = 0, max = n_reda,
+      label = "Redacción",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+#### 
+```{r}
+value<- dt %>% filter(fase =="EJECUCIÓN")
+
+
+gauge(value$n, min = 0, max = n_ejec,
+      label = "Ejecución",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+#### 
+```{r}
+value<- dt %>% filter(fase =="GARANTÍA")
+
+
+gauge(value$n, min = 0, max = n_gara,
+      label = "Garantía",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+
+### Mapa
+```{r}
+data <- data.frame(lat = c(38.29866,38.49449,38.38152),
+                   long = c(-5.26530,-5.14076,-4.85396))
+leaflet() %>%
+  addTiles() %>%
+  addMarkers(lng=-4.80702, lat=37.89171, 
+             popup="MN-PLAN Colegios Provinciales") %>% 
+  addMarkers(lng = data$long, lat = data$lat, 
+             popup = paste("Punto", data$lat, lat = data$long)) %>% 
+  setView(lng=-4.80702, lat=37.89171, 10)
+```
+
+## Row
+### Listado de actuaciones con Alarma {data-width=450}
+```{r}
+df <- raw %>% 
+  subset(select = c(actuacion,
+                    equipo_redactor,
+                    fase,
+                    servicio_responsable,
+                    dias_desvio_redaccion,
+                    dias_desvio_obra,
+                    dias_desvio_garantia)) %>% 
+  filter(equipo_redactor == ut) %>% 
+  mutate(desvio = case_when(
+    fase =="REDACCIÓN" & dias_desvio_redaccion <= 15  ~ dias_desvio_redaccion,
+    fase =="EJECUCIÓN" & dias_desvio_obra <= 15  ~ dias_desvio_obra,
+    fase =="GARANTÍA" &  dias_desvio_garantia <= 15  ~ dias_desvio_garantia)) %>% 
+  filter(!is.na(desvio))
+
+df <- df %>% 
+  subset(select = c(actuacion, fase, desvio)) %>% 
+  filter(desvio <=15)
+
+datatable(df, options = list(pageLength = 5))
+
+```
+
+### Listado de actuaciones
+```{r}
+#library(DT)
+df <- raw %>% 
+  subset(select = c(actuacion,
+                    municipio, 
+                    fase,
+                    servicio_responsable,
+                    equipo_redactor:devuelta_garantia)) %>% 
+  filter(equipo_redactor == ut) %>%
+  subset(select = -servicio_responsable)
+
+datatable(df, options = list(pageLength = 7))
+```
+
+
+# U. Medio Guadalquivir
+```{r}
+ut <- uts[6]
+```
+## Row
+### Fases {data-width=450}
+```{r}
+
+
+df <- raw %>% 
+  filter(equipo_redactor == ut)
+
+df$fase <- as.character(df$fase)
+
+df<- df %>% 
+  filter(fase == "REDACCIÓN" | fase == "EJECUCIÓN" | fase == "GARANTÍA") %>% 
+  group_by(fase, fondo) %>% 
+  tally() 
+
+df$fase <- factor(df$fase, 
+                  levels = c("REDACCIÓN", 
+                             "EJECUCIÓN",
+                             "GARANTÍA"))
+  
+fig <- df %>% 
+  plot_ly(x = ~fase, y = ~n, color = ~fondo, type='bar') %>% 
+  layout(plot_bgcolor='#e5ecf6',
+     yaxis = list(title = 'Actuaciones'))
+
+
+fig
+```
+
+### Actuaciones con atraso {data-width=150}
+
+#### 
+```{r}
+dt <- raw %>% 
+  subset(select = c(equipo_redactor,
+                    fase, 
+                    dias_desvio_redaccion, 
+                    dias_desvio_obra,
+                    dias_desvio_garantia)) %>% 
+  filter( equipo_redactor == ut) %>% 
+  filter(fase == "REDACCIÓN" | fase == "EJECUCIÓN" | fase == "GARANTÍA")  %>% 
+  mutate(desvio = case_when(
+    fase == "REDACCIÓN" & dias_desvio_redaccion < 0  ~ 1,
+    fase == "EJECUCIÓN" & dias_desvio_obra < 0  ~ 1,
+    fase == "GARANTÍA" & dias_desvio_garantia < 0  ~ 1
+    ))
+
+n_reda <- dt %>%  filter(fase == "REDACCIÓN") %>% nrow
+n_ejec <- dt %>%  filter(fase == "EJECUCIÓN") %>% nrow
+n_gara <- dt %>%  filter(fase == "GARANTÍA") %>% nrow
+
+
+dt <- dt %>% 
+  subset( select =c(fase, desvio)) %>% 
+  group_by(fase) %>% 
+  filter(desvio ==1) %>% 
+  tally() 
+
+
+value<- dt %>% filter(fase =="REDACCIÓN")
+
+
+gauge(value$n, min = 0, max = n_reda,
+      label = "Redacción",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+#### 
+```{r}
+value<- dt %>% filter(fase =="EJECUCIÓN")
+
+
+gauge(value$n, min = 0, max = n_ejec,
+      label = "Ejecución",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+#### 
+```{r}
+value<- dt %>% filter(fase =="GARANTÍA")
+
+
+gauge(value$n, min = 0, max = n_gara,
+      label = "Garantía",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+
+### Mapa
+```{r}
+data <- data.frame(lat = c(38.29866,38.49449,38.38152),
+                   long = c(-5.26530,-5.14076,-4.85396))
+leaflet() %>%
+  addTiles() %>%
+  addMarkers(lng=-4.80702, lat=37.89171, 
+             popup="MN-PLAN Colegios Provinciales") %>% 
+  addMarkers(lng = data$long, lat = data$lat, 
+             popup = paste("Punto", data$lat, lat = data$long)) %>% 
+  setView(lng=-4.80702, lat=37.89171, 10)
+```
+
+## Row
+### Listado de actuaciones con Alarma {data-width=450}
+```{r}
+df <- raw %>% 
+  subset(select = c(actuacion,
+                    equipo_redactor,
+                    fase,
+                    servicio_responsable,
+                    dias_desvio_redaccion,
+                    dias_desvio_obra,
+                    dias_desvio_garantia)) %>% 
+  filter(equipo_redactor == ut) %>% 
+  mutate(desvio = case_when(
+    fase =="REDACCIÓN" & dias_desvio_redaccion <= 15  ~ dias_desvio_redaccion,
+    fase =="EJECUCIÓN" & dias_desvio_obra <= 15  ~ dias_desvio_obra,
+    fase =="GARANTÍA" &  dias_desvio_garantia <= 15  ~ dias_desvio_garantia)) %>% 
+  filter(!is.na(desvio))
+
+df <- df %>% 
+  subset(select = c(actuacion, fase, desvio)) %>% 
+  filter(desvio <=15)
+
+datatable(df, options = list(pageLength = 5))
+
+```
+
+### Listado de actuaciones
+```{r}
+#library(DT)
+df <- raw %>% 
+  subset(select = c(actuacion,
+                    municipio, 
+                    fase,
+                    servicio_responsable,
+                    equipo_redactor:devuelta_garantia)) %>% 
+  filter(equipo_redactor == ut) %>%
+  subset(select = -servicio_responsable)
+
+datatable(df, options = list(pageLength = 7))
+```
+
+
+# U. Alto Guadalquivir
+```{r}
+ut <- uts[8]
+```
+## Row
+### Fases {data-width=450}
+```{r}
+
+
+df <- raw %>% 
+  filter(equipo_redactor == ut)
+
+df$fase <- as.character(df$fase)
+
+df<- df %>% 
+  filter(fase == "REDACCIÓN" | fase == "EJECUCIÓN" | fase == "GARANTÍA") %>% 
+  group_by(fase, fondo) %>% 
+  tally() 
+
+df$fase <- factor(df$fase, 
+                  levels = c("REDACCIÓN", 
+                             "EJECUCIÓN",
+                             "GARANTÍA"))
+  
+fig <- df %>% 
+  plot_ly(x = ~fase, y = ~n, color = ~fondo, type='bar') %>% 
+  layout(plot_bgcolor='#e5ecf6',
+     yaxis = list(title = 'Actuaciones'))
+
+
+fig
+```
+
+### Actuaciones con atraso {data-width=150}
+
+#### 
+```{r}
+dt <- raw %>% 
+  subset(select = c(equipo_redactor,
+                    fase, 
+                    dias_desvio_redaccion, 
+                    dias_desvio_obra,
+                    dias_desvio_garantia)) %>% 
+  filter( equipo_redactor == ut) %>% 
+  filter(fase == "REDACCIÓN" | fase == "EJECUCIÓN" | fase == "GARANTÍA")  %>% 
+  mutate(desvio = case_when(
+    fase == "REDACCIÓN" & dias_desvio_redaccion < 0  ~ 1,
+    fase == "EJECUCIÓN" & dias_desvio_obra < 0  ~ 1,
+    fase == "GARANTÍA" & dias_desvio_garantia < 0  ~ 1
+    ))
+
+n_reda <- dt %>%  filter(fase == "REDACCIÓN") %>% nrow
+n_ejec <- dt %>%  filter(fase == "EJECUCIÓN") %>% nrow
+n_gara <- dt %>%  filter(fase == "GARANTÍA") %>% nrow
+
+
+dt <- dt %>% 
+  subset( select =c(fase, desvio)) %>% 
+  group_by(fase) %>% 
+  filter(desvio ==1) %>% 
+  tally() 
+
+
+value<- dt %>% filter(fase =="REDACCIÓN")
+
+
+gauge(value$n, min = 0, max = n_reda,
+      label = "Redacción",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+#### 
+```{r}
+value<- dt %>% filter(fase =="EJECUCIÓN")
+
+
+gauge(value$n, min = 0, max = n_ejec,
+      label = "Ejecución",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+#### 
+```{r}
+value<- dt %>% filter(fase =="GARANTÍA")
+
+
+gauge(value$n, min = 0, max = n_gara,
+      label = "Garantía",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+
+### Mapa
+```{r}
+data <- data.frame(lat = c(38.29866,38.49449,38.38152),
+                   long = c(-5.26530,-5.14076,-4.85396))
+leaflet() %>%
+  addTiles() %>%
+  addMarkers(lng=-4.80702, lat=37.89171, 
+             popup="MN-PLAN Colegios Provinciales") %>% 
+  addMarkers(lng = data$long, lat = data$lat, 
+             popup = paste("Punto", data$lat, lat = data$long)) %>% 
+  setView(lng=-4.80702, lat=37.89171, 10)
+```
+
+## Row
+### Listado de actuaciones con Alarma {data-width=450}
+```{r}
+df <- raw %>% 
+  subset(select = c(actuacion,
+                    equipo_redactor,
+                    fase,
+                    servicio_responsable,
+                    dias_desvio_redaccion,
+                    dias_desvio_obra,
+                    dias_desvio_garantia)) %>% 
+  filter(equipo_redactor == ut) %>% 
+  mutate(desvio = case_when(
+    fase =="REDACCIÓN" & dias_desvio_redaccion <= 15  ~ dias_desvio_redaccion,
+    fase =="EJECUCIÓN" & dias_desvio_obra <= 15  ~ dias_desvio_obra,
+    fase =="GARANTÍA" &  dias_desvio_garantia <= 15  ~ dias_desvio_garantia)) %>% 
+  filter(!is.na(desvio))
+
+df <- df %>% 
+  subset(select = c(actuacion, fase, desvio)) %>% 
+  filter(desvio <=15)
+
+datatable(df, options = list(pageLength = 5))
+
+```
+
+### Listado de actuaciones
+```{r}
+#library(DT)
+df <- raw %>% 
+  subset(select = c(actuacion,
+                    municipio, 
+                    fase,
+                    servicio_responsable,
+                    equipo_redactor:devuelta_garantia)) %>% 
+  filter(equipo_redactor == ut) %>%
+  subset(select = -servicio_responsable)
+
+datatable(df, options = list(pageLength = 7))
+```
+
+# U. Campiña
+```{r}
+ut <- uts[7]
+```
+## Row
+### Fases {data-width=450}
+```{r}
+
+
+df <- raw %>% 
+  filter(equipo_redactor == ut)
+
+df$fase <- as.character(df$fase)
+
+df<- df %>% 
+  filter(fase == "REDACCIÓN" | fase == "EJECUCIÓN" | fase == "GARANTÍA") %>% 
+  group_by(fase, fondo) %>% 
+  tally() 
+
+df$fase <- factor(df$fase, 
+                  levels = c("REDACCIÓN", 
+                             "EJECUCIÓN",
+                             "GARANTÍA"))
+  
+fig <- df %>% 
+  plot_ly(x = ~fase, y = ~n, color = ~fondo, type='bar') %>% 
+  layout(plot_bgcolor='#e5ecf6',
+     yaxis = list(title = 'Actuaciones'))
+
+
+fig
+```
+
+### Actuaciones con atraso {data-width=150}
+
+#### 
+```{r}
+dt <- raw %>% 
+  subset(select = c(equipo_redactor,
+                    fase, 
+                    dias_desvio_redaccion, 
+                    dias_desvio_obra,
+                    dias_desvio_garantia)) %>% 
+  filter( equipo_redactor == ut) %>% 
+  filter(fase == "REDACCIÓN" | fase == "EJECUCIÓN" | fase == "GARANTÍA")  %>% 
+  mutate(desvio = case_when(
+    fase == "REDACCIÓN" & dias_desvio_redaccion < 0  ~ 1,
+    fase == "EJECUCIÓN" & dias_desvio_obra < 0  ~ 1,
+    fase == "GARANTÍA" & dias_desvio_garantia < 0  ~ 1
+    ))
+
+n_reda <- dt %>%  filter(fase == "REDACCIÓN") %>% nrow
+n_ejec <- dt %>%  filter(fase == "EJECUCIÓN") %>% nrow
+n_gara <- dt %>%  filter(fase == "GARANTÍA") %>% nrow
+
+
+dt <- dt %>% 
+  subset( select =c(fase, desvio)) %>% 
+  group_by(fase) %>% 
+  filter(desvio ==1) %>% 
+  tally() 
+
+
+value<- dt %>% filter(fase =="REDACCIÓN")
+
+
+gauge(value$n, min = 0, max = n_reda,
+      label = "Redacción",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+#### 
+```{r}
+value<- dt %>% filter(fase =="EJECUCIÓN")
+
+
+gauge(value$n, min = 0, max = n_ejec,
+      label = "Ejecución",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+#### 
+```{r}
+value<- dt %>% filter(fase =="GARANTÍA")
+
+
+gauge(value$n, min = 0, max = n_gara,
+      label = "Garantía",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+
+### Mapa
+```{r}
+data <- data.frame(lat = c(38.29866,38.49449,38.38152),
+                   long = c(-5.26530,-5.14076,-4.85396))
+leaflet() %>%
+  addTiles() %>%
+  addMarkers(lng=-4.80702, lat=37.89171, 
+             popup="MN-PLAN Colegios Provinciales") %>% 
+  addMarkers(lng = data$long, lat = data$lat, 
+             popup = paste("Punto", data$lat, lat = data$long)) %>% 
+  setView(lng=-4.80702, lat=37.89171, 10)
+```
+
+## Row
+### Listado de actuaciones con Alarma {data-width=450}
+```{r}
+df <- raw %>% 
+  subset(select = c(actuacion,
+                    equipo_redactor,
+                    fase,
+                    servicio_responsable,
+                    dias_desvio_redaccion,
+                    dias_desvio_obra,
+                    dias_desvio_garantia)) %>% 
+  filter(equipo_redactor == ut) %>% 
+  mutate(desvio = case_when(
+    fase =="REDACCIÓN" & dias_desvio_redaccion <= 15  ~ dias_desvio_redaccion,
+    fase =="EJECUCIÓN" & dias_desvio_obra <= 15  ~ dias_desvio_obra,
+    fase =="GARANTÍA" &  dias_desvio_garantia <= 15  ~ dias_desvio_garantia)) %>% 
+  filter(!is.na(desvio))
+
+df <- df %>% 
+  subset(select = c(actuacion, fase, desvio)) %>% 
+  filter(desvio <=15)
+
+datatable(df, options = list(pageLength = 5))
+
+```
+
+### Listado de actuaciones
+```{r}
+#library(DT)
+df <- raw %>% 
+  subset(select = c(actuacion,
+                    municipio, 
+                    fase,
+                    servicio_responsable,
+                    equipo_redactor:devuelta_garantia)) %>% 
+  filter(equipo_redactor == ut) %>%
+  subset(select = -servicio_responsable)
+
+datatable(df, options = list(pageLength = 7))
+```
+
+# U. Guadajoz
+```{r}
+ut <- uts[4]
+```
+## Row
+### Fases {data-width=450}
+```{r}
+
+
+df <- raw %>% 
+  filter(equipo_redactor == ut)
+
+df$fase <- as.character(df$fase)
+
+df<- df %>% 
+  filter(fase == "REDACCIÓN" | fase == "EJECUCIÓN" | fase == "GARANTÍA") %>% 
+  group_by(fase, fondo) %>% 
+  tally() 
+
+df$fase <- factor(df$fase, 
+                  levels = c("REDACCIÓN", 
+                             "EJECUCIÓN",
+                             "GARANTÍA"))
+  
+fig <- df %>% 
+  plot_ly(x = ~fase, y = ~n, color = ~fondo, type='bar') %>% 
+  layout(plot_bgcolor='#e5ecf6',
+     yaxis = list(title = 'Actuaciones'))
+
+
+fig
+```
+
+### Actuaciones con atraso {data-width=150}
+
+#### 
+```{r}
+dt <- raw %>% 
+  subset(select = c(equipo_redactor,
+                    fase, 
+                    dias_desvio_redaccion, 
+                    dias_desvio_obra,
+                    dias_desvio_garantia)) %>% 
+  filter( equipo_redactor == ut) %>% 
+  filter(fase == "REDACCIÓN" | fase == "EJECUCIÓN" | fase == "GARANTÍA")  %>% 
+  mutate(desvio = case_when(
+    fase == "REDACCIÓN" & dias_desvio_redaccion < 0  ~ 1,
+    fase == "EJECUCIÓN" & dias_desvio_obra < 0  ~ 1,
+    fase == "GARANTÍA" & dias_desvio_garantia < 0  ~ 1
+    ))
+
+n_reda <- dt %>%  filter(fase == "REDACCIÓN") %>% nrow
+n_ejec <- dt %>%  filter(fase == "EJECUCIÓN") %>% nrow
+n_gara <- dt %>%  filter(fase == "GARANTÍA") %>% nrow
+
+
+dt <- dt %>% 
+  subset( select =c(fase, desvio)) %>% 
+  group_by(fase) %>% 
+  filter(desvio ==1) %>% 
+  tally() 
+
+
+value<- dt %>% filter(fase =="REDACCIÓN")
+
+
+gauge(value$n, min = 0, max = n_reda,
+      label = "Redacción",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+#### 
+```{r}
+value<- dt %>% filter(fase =="EJECUCIÓN")
+
+
+gauge(value$n, min = 0, max = n_ejec,
+      label = "Ejecución",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+#### 
+```{r}
+value<- dt %>% filter(fase =="GARANTÍA")
+
+
+gauge(value$n, min = 0, max = n_gara,
+      label = "Garantía",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+
+### Mapa
+```{r}
+data <- data.frame(lat = c(38.29866,38.49449,38.38152),
+                   long = c(-5.26530,-5.14076,-4.85396))
+leaflet() %>%
+  addTiles() %>%
+  addMarkers(lng=-4.80702, lat=37.89171, 
+             popup="MN-PLAN Colegios Provinciales") %>% 
+  addMarkers(lng = data$long, lat = data$lat, 
+             popup = paste("Punto", data$lat, lat = data$long)) %>% 
+  setView(lng=-4.80702, lat=37.89171, 10)
+```
+
+## Row
+### Listado de actuaciones con Alarma {data-width=450}
+```{r}
+df <- raw %>% 
+  subset(select = c(actuacion,
+                    equipo_redactor,
+                    fase,
+                    servicio_responsable,
+                    dias_desvio_redaccion,
+                    dias_desvio_obra,
+                    dias_desvio_garantia)) %>% 
+  filter(equipo_redactor == ut) %>% 
+  mutate(desvio = case_when(
+    fase =="REDACCIÓN" & dias_desvio_redaccion <= 15  ~ dias_desvio_redaccion,
+    fase =="EJECUCIÓN" & dias_desvio_obra <= 15  ~ dias_desvio_obra,
+    fase =="GARANTÍA" &  dias_desvio_garantia <= 15  ~ dias_desvio_garantia)) %>% 
+  filter(!is.na(desvio))
+
+df <- df %>% 
+  subset(select = c(actuacion, fase, desvio)) %>% 
+  filter(desvio <=15)
+
+datatable(df, options = list(pageLength = 5))
+
+```
+
+### Listado de actuaciones
+```{r}
+#library(DT)
+df <- raw %>% 
+  subset(select = c(actuacion,
+                    municipio, 
+                    fase,
+                    servicio_responsable,
+                    equipo_redactor:devuelta_garantia)) %>% 
+  filter(equipo_redactor == ut) %>%
+  subset(select = -servicio_responsable)
+
+datatable(df, options = list(pageLength = 7))
+```
+
+# U. Suroeste
+```{r}
+ut <- uts[2]
+```
+## Row
+### Fases {data-width=450}
+```{r}
+
+
+df <- raw %>% 
+  filter(equipo_redactor == ut)
+
+df$fase <- as.character(df$fase)
+
+df<- df %>% 
+  filter(fase == "REDACCIÓN" | fase == "EJECUCIÓN" | fase == "GARANTÍA") %>% 
+  group_by(fase, fondo) %>% 
+  tally() 
+
+df$fase <- factor(df$fase, 
+                  levels = c("REDACCIÓN", 
+                             "EJECUCIÓN",
+                             "GARANTÍA"))
+  
+fig <- df %>% 
+  plot_ly(x = ~fase, y = ~n, color = ~fondo, type='bar') %>% 
+  layout(plot_bgcolor='#e5ecf6',
+     yaxis = list(title = 'Actuaciones'))
+
+
+fig
+```
+
+### Actuaciones con atraso {data-width=150}
+
+#### 
+```{r}
+dt <- raw %>% 
+  subset(select = c(equipo_redactor,
+                    fase, 
+                    dias_desvio_redaccion, 
+                    dias_desvio_obra,
+                    dias_desvio_garantia)) %>% 
+  filter( equipo_redactor == ut) %>% 
+  filter(fase == "REDACCIÓN" | fase == "EJECUCIÓN" | fase == "GARANTÍA")  %>% 
+  mutate(desvio = case_when(
+    fase == "REDACCIÓN" & dias_desvio_redaccion < 0  ~ 1,
+    fase == "EJECUCIÓN" & dias_desvio_obra < 0  ~ 1,
+    fase == "GARANTÍA" & dias_desvio_garantia < 0  ~ 1
+    ))
+
+n_reda <- dt %>%  filter(fase == "REDACCIÓN") %>% nrow
+n_ejec <- dt %>%  filter(fase == "EJECUCIÓN") %>% nrow
+n_gara <- dt %>%  filter(fase == "GARANTÍA") %>% nrow
+
+
+dt <- dt %>% 
+  subset( select =c(fase, desvio)) %>% 
+  group_by(fase) %>% 
+  filter(desvio ==1) %>% 
+  tally() 
+
+
+value<- dt %>% filter(fase =="REDACCIÓN")
+
+
+gauge(value$n, min = 0, max = n_reda,
+      label = "Redacción",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+#### 
+```{r}
+value<- dt %>% filter(fase =="EJECUCIÓN")
+
+
+gauge(value$n, min = 0, max = n_ejec,
+      label = "Ejecución",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+#### 
+```{r}
+value<- dt %>% filter(fase =="GARANTÍA")
+
+
+gauge(value$n, min = 0, max = n_gara,
+      label = "Garantía",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+
+### Mapa
+```{r}
+data <- data.frame(lat = c(38.29866,38.49449,38.38152),
+                   long = c(-5.26530,-5.14076,-4.85396))
+leaflet() %>%
+  addTiles() %>%
+  addMarkers(lng=-4.80702, lat=37.89171, 
+             popup="MN-PLAN Colegios Provinciales") %>% 
+  addMarkers(lng = data$long, lat = data$lat, 
+             popup = paste("Punto", data$lat, lat = data$long)) %>% 
+  setView(lng=-4.80702, lat=37.89171, 10)
+```
+
+## Row
+### Listado de actuaciones con Alarma {data-width=450}
+```{r}
+df <- raw %>% 
+  subset(select = c(actuacion,
+                    equipo_redactor,
+                    fase,
+                    servicio_responsable,
+                    dias_desvio_redaccion,
+                    dias_desvio_obra,
+                    dias_desvio_garantia)) %>% 
+  filter(equipo_redactor == ut) %>% 
+  mutate(desvio = case_when(
+    fase =="REDACCIÓN" & dias_desvio_redaccion <= 15  ~ dias_desvio_redaccion,
+    fase =="EJECUCIÓN" & dias_desvio_obra <= 15  ~ dias_desvio_obra,
+    fase =="GARANTÍA" &  dias_desvio_garantia <= 15  ~ dias_desvio_garantia)) %>% 
+  filter(!is.na(desvio))
+
+df <- df %>% 
+  subset(select = c(actuacion, fase, desvio)) %>% 
+  filter(desvio <=15)
+
+datatable(df, options = list(pageLength = 5))
+
+```
+
+### Listado de actuaciones
+```{r}
+#library(DT)
+df <- raw %>% 
+  subset(select = c(actuacion,
+                    municipio, 
+                    fase,
+                    servicio_responsable,
+                    equipo_redactor:devuelta_garantia)) %>% 
+  filter(equipo_redactor == ut) %>%
+  subset(select = -servicio_responsable)
+
+datatable(df, options = list(pageLength = 7))
+```
+
+# U. Sureste
+```{r}
+ut <- uts[3]
+```
+## Row
+### Fases {data-width=450}
+```{r}
+
+
+df <- raw %>% 
+  filter(equipo_redactor == ut)
+
+df$fase <- as.character(df$fase)
+
+df<- df %>% 
+  filter(fase == "REDACCIÓN" | fase == "EJECUCIÓN" | fase == "GARANTÍA") %>% 
+  group_by(fase, fondo) %>% 
+  tally() 
+
+df$fase <- factor(df$fase, 
+                  levels = c("REDACCIÓN", 
+                             "EJECUCIÓN",
+                             "GARANTÍA"))
+  
+fig <- df %>% 
+  plot_ly(x = ~fase, y = ~n, color = ~fondo, type='bar') %>% 
+  layout(plot_bgcolor='#e5ecf6',
+     yaxis = list(title = 'Actuaciones'))
+
+
+fig
+```
+
+### Actuaciones con atraso {data-width=150}
+
+#### 
+```{r}
+dt <- raw %>% 
+  subset(select = c(equipo_redactor,
+                    fase, 
+                    dias_desvio_redaccion, 
+                    dias_desvio_obra,
+                    dias_desvio_garantia)) %>% 
+  filter( equipo_redactor == ut) %>% 
+  filter(fase == "REDACCIÓN" | fase == "EJECUCIÓN" | fase == "GARANTíA")  %>% 
+  mutate(desvio = case_when(
+    fase == "REDACCIÓN" & dias_desvio_redaccion < 0  ~ 1,
+    fase == "EJECUCIÓN" & dias_desvio_obra < 0  ~ 1,
+    fase == "GARANTÍA" & dias_desvio_garantia < 0  ~ 1
+    ))
+
+n_reda <- dt %>%  filter(fase == "REDACCIÓN") %>% nrow
+n_ejec <- dt %>%  filter(fase == "EJECUCIÓN") %>% nrow
+n_gara <- dt %>%  filter(fase == "GARANTÍA") %>% nrow
+
+
+dt <- dt %>% 
+  subset( select =c(fase, desvio)) %>% 
+  group_by(fase) %>% 
+  filter(desvio ==1) %>% 
+  tally() 
+
+
+value<- dt %>% filter(fase =="REDACCIÓN")
+
+
+gauge(value$n, min = 0, max = n_reda,
+      label = "Redacción",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+#### 
+```{r}
+value<- dt %>% filter(fase =="EJECUCIÓN")
+
+
+gauge(value$n, min = 0, max = n_ejec,
+      label = "Ejecución",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+#### 
+```{r}
+value<- dt %>% filter(fase =="GARANTÍA")
+
+
+gauge(value$n, min = 0, max = n_gara,
+      label = "Garantía",
+      gaugeSectors(
+        success = c(0,1),
+        warning = c(2,5),
+        danger = c(6,10)))
+```
+
+### Mapa
+```{r}
+data <- data.frame(lat = c(38.29866,38.49449,38.38152),
+                   long = c(-5.26530,-5.14076,-4.85396))
+leaflet() %>%
+  addTiles() %>%
+  addMarkers(lng=-4.80702, lat=37.89171, 
+             popup="MN-PLAN Colegios Provinciales") %>% 
+  addMarkers(lng = data$long, lat = data$lat, 
+             popup = paste("Punto", data$lat, lat = data$long)) %>% 
+  setView(lng=-4.80702, lat=37.89171, 10)
+```
+
+## Row
+### Listado de actuaciones con Alarma {data-width=450}
+```{r}
+df <- raw %>% 
+  subset(select = c(actuacion,
+                    equipo_redactor,
+                    fase,
+                    servicio_responsable,
+                    dias_desvio_redaccion,
+                    dias_desvio_obra,
+                    dias_desvio_garantia)) %>% 
+  filter(equipo_redactor == ut) %>% 
+  mutate(desvio = case_when(
+    fase =="REDACCIÓN" & dias_desvio_redaccion <= 15  ~ dias_desvio_redaccion,
+    fase =="EJECUCIÓN" & dias_desvio_obra <= 15  ~ dias_desvio_obra,
+    fase =="GARANTÍA" &  dias_desvio_garantia <= 15  ~ dias_desvio_garantia)) %>% 
+  filter(!is.na(desvio))
+
+df <- df %>% 
+  subset(select = c(actuacion, fase, desvio)) %>% 
+  filter(desvio <=15)
+
+datatable(df, options = list(pageLength = 5))
+
+```
+
+### Listado de actuaciones
+```{r}
+#library(DT)
+df <- raw %>% 
+  subset(select = c(actuacion,
+                    municipio, 
+                    fase,
+                    servicio_responsable,
+                    equipo_redactor:devuelta_garantia)) %>% 
+  filter(equipo_redactor == ut) %>%
+  subset(select = -servicio_responsable)
+
+datatable(df, options = list(pageLength = 7))
+```
+
