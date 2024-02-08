@@ -28,11 +28,11 @@ pacman::p_load(
 
 #create connection object
 conn <- dbConnect(drv =PostgreSQL(), 
-                 user="pzl01", 
-                 password= "Catalonia22",
-                 host = "sigdipucordoba.eprinsa.es",
-                 port=5432, 
-                 dbname="geodipco")
+                 user="***", 
+                 password= "***",
+                 host = "***",
+                 port=***, 
+                 dbname="***")
 
 # Create a dataframe given a schema-table pair
 raw = dbReadTable(
