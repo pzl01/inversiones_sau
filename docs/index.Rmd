@@ -29,7 +29,7 @@ pacman::p_load(
 #create connection object
 conn <- dbConnect(drv =PostgreSQL(), 
                  user="pzl01", 
-                 password= "Catalonia22",
+                 password= "***",
                  host = "sigdipucordoba.eprinsa.es",
                  port=5432, 
                  dbname="geodipco")
